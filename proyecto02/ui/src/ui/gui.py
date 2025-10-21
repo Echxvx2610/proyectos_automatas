@@ -6,17 +6,18 @@ Mantiene:
 - Menú 'Herramientas' (Analizar y Crear Factura)
 - Editor de texto, barra de estado y estilos oscuros.
 """
-
 import sys
 import os
+# configurar sys.path para importar fruitLoops.main y invoiceGenerator.main
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout,
     QTextEdit, QFileDialog, QMessageBox, QSplitter, QDialog
 )
 from PySide6.QtGui import QIcon, QAction
 from PySide6.QtCore import QSize, Qt
-
 from .dialogs import ClientDataDialog
+from fruitLoops.main import search_fruits, get_fruit_pattern
 
 class TextEditorGUI(QMainWindow):
     """"
@@ -131,6 +132,7 @@ class TextEditorGUI(QMainWindow):
                 self.text_edit.setPlainText(content)
                 self.current_file = file_path
                 self.statusBar().showMessage(f'Abierto: {self.current_file}')
+                self.analysis_text.insertPlainText(f'Detalles del análisis aparecerán aquí...\n')
             except Exception as e:
                 QMessageBox.critical(self, 'Error', f'No se pudo abrir el archivo:\n{e}')
 
@@ -154,10 +156,68 @@ class TextEditorGUI(QMainWindow):
 
     def analyze(self):
         """"
-        Acción de análisis (en construcción).
-        Aquí iría la lógica de análisis.
+        Analizar el texto actual y mostrar resultados en el área de análisis. ( fruitLoops.main.search_fruits )
         """
-        self.analysis_text.setPlainText("Función de análisis: En construcción.\n\nAquí aparecerán los detalles del análisis del texto.")
+        # Obtener el texto actual
+        # content = self.text_edit.toPlainText()
+        # print(content)
+
+        # definimos la lista de frutas a buscar
+        fruits = [
+        'naranja', 'mandarina', 'toronja', 
+        'fresa', 'guayaba', 'limón',
+        'piña', 'mango', 'papaya', 
+        'melón', 'sandía', 'ciruela', 
+        'durazno', 'higo', 'pera', 
+        'tuna', 'manzana', 'uva', 
+        'granada'
+        ]
+        
+        # leer el texto del editor
+        content = self.text_edit.toPlainText()
+        fruits_counts, fruits_per_month = search_fruits(content, fruits)
+
+        if fruits_counts is None:
+            return
+
+        # print(fruits_counts)
+        # print(fruits_per_month)
+
+        # cantidad de frutas sin repetir
+        unique_fruits = [fruit for fruit, count in fruits_counts.items() if count > 0]
+
+        #mostrar en 'consola' de análisis (analysis_text)
+        self.analysis_text.clear()
+        self.analysis_text.insertPlainText("[1].Detectar el número de frutas sin repetir:\n")
+        self.analysis_text.insertPlainText("-" * 60 + "\n")
+        self.analysis_text.insertPlainText(f"Frutas encontradas sin repetir: {len(unique_fruits)}\n")
+        self.analysis_text.insertPlainText(f"   {', '.join(sorted(unique_fruits))}\n\n")
+
+        # frutas por mes
+        self.analysis_text.insertPlainText("[2].Indicar cuántas frutas hay en cada mes:\n") 
+        self.analysis_text.insertPlainText("-" * 60 + "\n")
+        self.analysis_text.insertPlainText("Frutas por mes:")
+
+        meses_orden = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+    
+        for mes in meses_orden:
+            if mes in fruits_per_month:
+                lista = fruits_per_month[mes]
+                self.analysis_text.insertPlainText(f"{mes:12} → {len(lista)} frutas: {', '.join(lista)}\n")
+                #print(f"{mes:12} → {len(lista)} frutas: {', '.join(lista)}")
+            else:
+                self.analysis_text.insertPlainText(f"{mes:12} → 0 frutas\n")
+                #print(f"{mes:12} → 0 frutas")
+
+        # contar veces que aparece cada fruta
+        self.analysis_text.insertPlainText("\n[3].Indicar cuántas veces aparece el nombre de cada fruta:\n")
+        self.analysis_text.insertPlainText("-" * 60 + "\n")
+        self.analysis_text.insertPlainText("\nFrecuencia de aparicion:\n")
+        for fruit, count in fruits_counts.items():
+            if count > 0:
+                self.analysis_text.insertPlainText(f"{fruit.capitalize():12} → {count} vez{'es' if count != 1 else ''}\n")
+                #print(f"{fruit.capitalize():12} → {count} vez{'es' if count != 1 else ''}")
 
     def create_invoice(self):
         """

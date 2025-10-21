@@ -1,13 +1,15 @@
 import re
 from collections import defaultdict
 
-def search_fruits(file_path, fruit_list):
+def search_fruits(content, fruit_list):
     fruit_counts = {fruit: 0 for fruit in fruit_list}
     fruits_per_month = defaultdict(list)
     
     try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            content = file.read()
+        # asumimos que content ya es una cadena de texto ( agregar validacion o manejo de errores )
+        # lectura de archivo para pruebas ( deshabilitado para gui, usar content directo )
+        # with open(file_path, 'r', encoding='utf-8') as file:
+        #     content = file.read()
             
         # Contar las veces aparece cada fruta (case-insensitive)
         content_lower = content.lower()
@@ -50,48 +52,48 @@ def get_fruit_pattern(fruit):
         # Plurales regulares: fresa -> fresas
         return rf'\b{fruit_lower}(|s)\b'
 
-def main():
-    fruits = [
-        'naranja', 'mandarina', 'toronja', 
-        'fresa', 'guayaba', 'limón',
-        'piña', 'mango', 'papaya', 
-        'melón', 'sandía', 'ciruela', 
-        'durazno', 'higo', 'pera', 
-        'tuna', 'manzana', 'uva', 
-        'granada'
-    ]
+# def main():
+#     fruits = [
+#         'naranja', 'mandarina', 'toronja', 
+#         'fresa', 'guayaba', 'limón',
+#         'piña', 'mango', 'papaya', 
+#         'melón', 'sandía', 'ciruela', 
+#         'durazno', 'higo', 'pera', 
+#         'tuna', 'manzana', 'uva', 
+#         'granada'
+#     ]
     
-    file_path = r'fruitLoops\frutas_magicas.txt'
-    fruit_counts, fruits_per_month = search_fruits(file_path, fruits)
+#     file_path = r'fruitLoops\frutas_magicas.txt'
+#     fruit_counts, fruits_per_month = search_fruits(file_path, fruits)
     
-    if fruit_counts is None:
-        return
+#     if fruit_counts is None:
+#         return
     
-    # Cantidad de frutas sin repetir
-    frutas_encontradas = [f for f, c in fruit_counts.items() if c > 0]
-    print(f"Frutas encontradas sin repetir: {len(frutas_encontradas)}")
-    print(f"   {', '.join(sorted(frutas_encontradas))}\n")
+#     # Cantidad de frutas sin repetir
+#     frutas_encontradas = [f for f, c in fruit_counts.items() if c > 0]
+#     print(f"Frutas encontradas sin repetir: {len(frutas_encontradas)}")
+#     print(f"   {', '.join(sorted(frutas_encontradas))}\n")
     
-    # Frutas por mes
-    print("Frutas por mes:")
-    print("-" * 60)
+#     # Frutas por mes
+#     print("Frutas por mes:")
+#     print("-" * 60)
     
-    meses_orden = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+#     meses_orden = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+#                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
     
-    for mes in meses_orden:
-        if mes in fruits_per_month:
-            lista = fruits_per_month[mes]
-            print(f"{mes:12} → {len(lista)} frutas: {', '.join(lista)}")
-        else:
-            print(f"{mes:12} → 0 frutas")
+#     for mes in meses_orden:
+#         if mes in fruits_per_month:
+#             lista = fruits_per_month[mes]
+#             print(f"{mes:12} → {len(lista)} frutas: {', '.join(lista)}")
+#         else:
+#             print(f"{mes:12} → 0 frutas")
     
-    # Veces que aparece cada fruta
-    print("\nFrecuencia de aparicion:")
-    print("-" * 60)
-    for fruit, count in sorted(fruit_counts.items(), key=lambda x: -x[1]):
-        if count > 0:
-            print(f"{fruit.capitalize():12} → {count} vez{'es' if count != 1 else ''}")
+#     # Veces que aparece cada fruta
+#     print("\nFrecuencia de aparicion:")
+#     print("-" * 60)
+#     for fruit, count in sorted(fruit_counts.items(), key=lambda x: -x[1]):
+#         if count > 0:
+#             print(f"{fruit.capitalize():12} → {count} vez{'es' if count != 1 else ''}")
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
