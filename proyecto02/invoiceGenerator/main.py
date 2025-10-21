@@ -13,6 +13,7 @@ costos_frutas = {
     "Mango": {"precio_kg": 35, "precio_pieza": 5, "nota": "Precios por kg y pieza"},
     "Papaya": {"precio_kg": 20, "precio_pieza": 6, "nota": "Precios por kg y pieza"},
     "Melón": {"precio_kg": 30, "precio_pieza": 8, "nota": "Precios por kg y pieza"},
+    "Melon": {"precio_kg": 30, "precio_pieza": 8, "nota": "Precios por kg y pieza"},
     "Sandía": {"precio_kg": 15, "precio_pieza": 12, "nota": "Precios por kg y pieza"},
     "Ciruela": {"precio_kg": 45, "precio_pieza": None, "nota": "Solo por kg"},
     "Durazno": {"precio_kg": 50, "precio_pieza": 4, "nota": "Precios por kg y pieza"},
@@ -97,9 +98,9 @@ def calcular_total(compras):
     return total, desglose
 
 def procesar_texto_compra(texto):
-    """Función principal que procesa el texto de compra"""
-    print(f"Texto de compra: \"{texto}\"\n")
-    print("=" * 70)
+    """Función principal que procesa el texto de compra , quitar comentarios de print para probar en consola"""
+    #print(f"Texto de compra: \"{texto}\"\n")
+    #print("=" * 70)
 
     # Extraer compras del texto
     compras = extraer_compras(texto)
@@ -110,18 +111,22 @@ def procesar_texto_compra(texto):
 
     # Calcular total
     total, desglose = calcular_total(compras)
+    # print(type(total))
+    # print(type(desglose))
+    return total, desglose
+    # # Mostrar desglose
+    # print("\nDESGLOSE DE COMPRA:")
+    # print("-" * 70)
+    # for item in desglose:
+    #     print(f"{item['fruta']:12} → {item['cantidad']:6.2f} {item['unidad']:6} × ${item['precio_unitario']:5} = ${item['subtotal']:7.2f}")
 
-    # Mostrar desglose
-    print("\nDESGLOSE DE COMPRA:")
-    print("-" * 70)
-    for item in desglose:
-        print(f"{item['fruta']:12} → {item['cantidad']:6.2f} {item['unidad']:6} × ${item['precio_unitario']:5} = ${item['subtotal']:7.2f}")
-
-    print("-" * 70)
-    print(f"{'TOTAL':12}                                    ${total:7.2f}")
-    print("=" * 70)
+    # print("-" * 70)
+    # print(f"{'TOTAL':12}                                    ${total:7.2f}")
+    # print("=" * 70)
 
 if __name__ == "__main__":
     # Ejemplo 1
-    texto = "Elena llevo 1kg de manzanas, 3kg de piña y 1/2 kg de limón."
-    procesar_texto_compra(texto)
+    #texto = input("Ingrese el texto de compra: ")
+    texto = "Compré 2 kg de naranjas, 3 piezas de mango y 1.5 kg de uvas."
+    print(type(procesar_texto_compra(texto)))
+    print(procesar_texto_compra(texto)) # [0] es el total, [1] es el desglose
