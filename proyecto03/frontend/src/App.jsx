@@ -5,7 +5,7 @@ import ChatMessage from "./components/ChatMessage"
 import ChatInput from "./components/ChatInput"
 import Header from "./components/Header"
 import "./App.css"
-
+import { Wand } from "lucide-react"
 const API_URL = "http://localhost:5000/api"
 
 function App() {
@@ -78,8 +78,11 @@ function App() {
       <div className="chat-container">
         {messages.length === 0 ? (
           <div className="welcome-screen">
-            <div className="welcome-icon">✨</div>
-            <h1>Chat con Gemini</h1>
+            <div className="welcome-icon">🪄</div>
+            {/* <div className="welcom-icon">
+            <Wand size={64}/>
+            </div> */}
+            <h1>Chat con OpenChad</h1>
             <p>Haz cualquier pregunta y obtén respuestas inteligentes</p>
             <div className="suggestions">
               <button onClick={() => sendMessage("¿Qué es la inteligencia artificial?")}>¿Qué es la IA?</button>

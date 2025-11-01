@@ -2,8 +2,9 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
 }
 
 .chat-container {
@@ -12,6 +13,9 @@
   padding: 2rem 1rem;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .welcome-screen {
@@ -22,6 +26,7 @@
   height: 100%;
   text-align: center;
   padding: 2rem;
+  width: 100%;
 }
 
 .welcome-icon {
@@ -61,6 +66,7 @@
   gap: 0.75rem;
   justify-content: center;
   max-width: 600px;
+  width: 100%;
 }
 
 .suggestions button {
@@ -84,6 +90,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  width: 100%;
 }
 
 .loading-indicator {
@@ -130,17 +137,69 @@
   }
 }
 
-@media (max-width: 768px) {
+/* Tablet */
+@media (max-width: 1024px) {
+  .chat-container {
+    padding: 1.5rem 1rem;
+  }
+  
   .welcome-screen h1 {
     font-size: 2rem;
+  }
+  
+  .welcome-icon {
+    font-size: 3rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .chat-container {
+    padding: 1rem 0.75rem;
+  }
+  
+  .welcome-screen {
+    padding: 1.5rem;
+  }
+  
+  .welcome-screen h1 {
+    font-size: 1.75rem;
+  }
+  
+  .welcome-screen p {
+    font-size: 1rem;
+  }
+  
+  .welcome-icon {
+    font-size: 2.5rem;
   }
 
   .suggestions {
     flex-direction: column;
     width: 100%;
+    gap: 0.5rem;
   }
 
   .suggestions button {
     width: 100%;
+  }
+  
+  .loading-indicator {
+    max-width: 90%;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .chat-container {
+    padding: 0.75rem 0.5rem;
+  }
+  
+  .welcome-screen h1 {
+    font-size: 1.5rem;
+  }
+  
+  .welcome-icon {
+    font-size: 2rem;
   }
 }

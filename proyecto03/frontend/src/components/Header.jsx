@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react"
+import { Skull } from "lucide-react"
 import "./Header.css"
 
 function Header() {
@@ -6,7 +6,8 @@ function Header() {
     <header className="header">
       <div className="header-content">
         <div className="logo">
-          <Sparkles size={48} />
+          {/* <Skull size={48} /> */}
+          <img src="gigachad_circle.png" alt="gigachad" width={70}/>
           <span>OpenChad</span>
         </div>
         <div className="status">
