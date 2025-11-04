@@ -55,7 +55,7 @@ def chat():
         if not message:
             return jsonify({'error': 'No message provided'}), 400
         
-        print(f"[v0] Recibiendo mensaje: {message[:50]}...")
+        print(f"Recibiendo mensaje: {message[:50]}...")
         
         # Listar modelos disponibles y seleccionar el primero con generateContent
         models = list(genai.list_models())
@@ -85,13 +85,13 @@ def chat():
                 'success': False
             }), 500
         
-        print(f"[v0] Usando modelo: {selected_model}")
+        print(f"Usando modelo: {selected_model}")
         
         # Crear modelo y generar respuesta
         model = genai.GenerativeModel(selected_model)
         response = model.generate_content(message)
         
-        print(f"[v0] Respuesta generada exitosamente")
+        print(f"Respuesta generada exitosamente")
         
         return jsonify({
             'response': response.text,
@@ -100,7 +100,7 @@ def chat():
         })
     
     except Exception as e:
-        print(f"[v0] Error en /api/chat: {str(e)}")
+        print(f"Error en /api/chat: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({
@@ -125,7 +125,7 @@ if __name__ == '__main__':
         for m in models:
             methods = getattr(m, 'supported_generation_methods', [])
             if 'generateContent' in methods:
-                print(f"✓ {m.name}")
+                print(f"{m.name}")
     except Exception as e:
         print(f"Error listando modelos: {e}")
     print("===========================\n")

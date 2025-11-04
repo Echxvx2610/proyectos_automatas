@@ -7,6 +7,20 @@
   margin: 0;
 }
 
+/* Added layout for sidebar and main content */
+.app-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
 .chat-container {
   flex: 1;
   overflow-y: auto;
@@ -16,6 +30,7 @@
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+  scrollbar-width: none;
 }
 
 .welcome-screen {
@@ -142,11 +157,11 @@
   .chat-container {
     padding: 1.5rem 1rem;
   }
-  
+
   .welcome-screen h1 {
     font-size: 2rem;
   }
-  
+
   .welcome-icon {
     font-size: 3rem;
   }
@@ -157,19 +172,19 @@
   .chat-container {
     padding: 1rem 0.75rem;
   }
-  
+
   .welcome-screen {
     padding: 1.5rem;
   }
-  
+
   .welcome-screen h1 {
     font-size: 1.75rem;
   }
-  
+
   .welcome-screen p {
     font-size: 1rem;
   }
-  
+
   .welcome-icon {
     font-size: 2.5rem;
   }
@@ -183,7 +198,7 @@
   .suggestions button {
     width: 100%;
   }
-  
+
   .loading-indicator {
     max-width: 90%;
   }
@@ -194,11 +209,11 @@
   .chat-container {
     padding: 0.75rem 0.5rem;
   }
-  
+
   .welcome-screen h1 {
     font-size: 1.5rem;
   }
-  
+
   .welcome-icon {
     font-size: 2rem;
   }

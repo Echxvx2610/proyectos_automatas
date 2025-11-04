@@ -1,4 +1,3 @@
-import { Skull } from "lucide-react"
 import "./Header.css"
 
 function Header() {
@@ -7,7 +6,7 @@ function Header() {
       <div className="header-content">
         <div className="logo">
           {/* <Skull size={48} /> */}
-          <img src="gigachad_circle.png" alt="gigachad" width={70}/>
+          <img src="gigachad_circle.png" alt="gigachad" width={70} />
           <span>OpenChad</span>
         </div>
         <div className="status">

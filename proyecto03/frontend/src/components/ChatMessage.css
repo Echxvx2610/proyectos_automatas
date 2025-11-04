@@ -57,6 +57,33 @@
   flex: 1;
 }
 
+/* Added attachment display styles */
+.message-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.message-attachment {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.message-attachment-image {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.message-attachment-text {
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
 .message-text {
   line-height: 1.6;
   white-space: pre-wrap;
@@ -71,5 +98,10 @@
 @media (max-width: 768px) {
   .message {
     max-width: 90%;
+  }
+
+  .message-attachment-image {
+    max-width: 150px;
+    max-height: 150px;
   }
 }
