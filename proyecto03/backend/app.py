@@ -3,7 +3,8 @@ from flask_cors import CORS
 import google.generativeai as genai
 import os
 from dotenv import load_dotenv
-
+from PIL import Image
+import io
 load_dotenv()
 
 app = Flask(__name__)
@@ -130,3 +131,33 @@ if __name__ == '__main__':
         print(f"Error listando modelos: {e}")
     print("===========================\n")
     app.run(debug=True, port=5000)
+@app.route('/api/vision', methods=['POST'])
+def vision():
+     try:
+         if 'image' not in request.files:
+             return jsonify({'error': 'No se envió ninguna imagen'}), 400
+
+         image_file = request.files['image']
+        
+         # Leer imagen en memoria
+         image_bytes = image_file.read()
+         image = Image.open(io.BytesIO(image_bytes))
+
+         # Pregunta opcional
+         question = request.form.get('question', 'Describe la imagen detalladamente.')
+
+         # Seleccionar modelo con visión
+         model_name = "gemini-1.5-flash"  # Puedes cambiar por uno de mayor capacidad
+         model = genai.GenerativeModel(model_name)
+
+         response = model.generate_content([question, image])
+
+         return jsonify({
+             'success': True,
+             'response': response.text,
+             'model_used': model_name
+         })
+
+     except Exception as e:
+         print(f"Error en /api/vision: {e}")
+         return jsonify({'success': False, 'error': str(e)}), 500
