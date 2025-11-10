@@ -65,23 +65,6 @@ function App() {
   const sendMessage = async (messageText, attachments = []) => {
     if (!messageText.trim() && attachments.length === 0) return
 
-    let messageContent = messageText
-
-    // Add attachment info to message
-    if (attachments.length > 0) {
-      const attachmentInfo = attachments
-        .map((att) => {
-          if (att.type === "image") {
-            return `[Imagen: ${att.name}]`
-          } else {
-            return `[Archivo de texto: ${att.name}]\nContenido:\n${att.data}`
-          }
-        })
-        .join("\n\n")
-
-      messageContent = `${messageText}\n\n${attachmentInfo}`
-    }
-
     const userMessage = {
       id: Date.now(),
       text: messageText,
@@ -106,13 +89,53 @@ function App() {
     setIsLoading(true)
 
     try {
-      const response = await fetch(`${API_URL}/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message: messageContent }),
-      })
+      // Detectar si hay imágenes
+      const hasImages = attachments.some(att => att.type === "image")
+      
+      let response;
+      
+      if (hasImages) {
+        // Enviar con FormData para imágenes
+        const formData = new FormData()
+        formData.append('message', messageText)
+        
+        // Convertir base64 a Blob y agregar al FormData
+        for (const att of attachments) {
+          if (att.type === "image") {
+            // Convertir data URL a Blob
+            const base64Response = await fetch(att.data)
+            const blob = await base64Response.blob()
+            formData.append('images', blob, att.name)
+          }
+        }
+        
+        response = await fetch(`${API_URL}/chat`, {
+          method: "POST",
+          body: formData,
+          // NO incluir Content-Type header, el navegador lo establece automáticamente con el boundary
+        })
+      } else {
+        // Enviar JSON para solo texto
+        let messageContent = messageText
+        
+        // Si hay archivos de texto, incluirlos en el mensaje
+        if (attachments.length > 0) {
+          const textAttachments = attachments
+            .filter(att => att.type === "text")
+            .map(att => `[Archivo: ${att.name}]\n${att.data}`)
+            .join("\n\n")
+          
+          messageContent = `${messageText}\n\n${textAttachments}`
+        }
+        
+        response = await fetch(`${API_URL}/chat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message: messageContent }),
+        })
+      }
 
       const data = await response.json()
 
@@ -156,6 +179,101 @@ function App() {
       setIsLoading(false)
     }
   }
+
+  // const sendMessage = async (messageText, attachments = []) => {
+  //   if (!messageText.trim() && attachments.length === 0) return
+
+  //   let messageContent = messageText
+
+  //   // Add attachment info to message
+  //   if (attachments.length > 0) {
+  //     const attachmentInfo = attachments
+  //       .map((att) => {
+  //         if (att.type === "image") {
+  //           return `[Imagen: ${att.name}]`
+  //         } else {
+  //           return `[Archivo de texto: ${att.name}]\nContenido:\n${att.data}`
+  //         }
+  //       })
+  //       .join("\n\n")
+
+  //     messageContent = `${messageText}\n\n${attachmentInfo}`
+  //   }
+
+  //   const userMessage = {
+  //     id: Date.now(),
+  //     text: messageText,
+  //     attachments: attachments,
+  //     sender: "user",
+  //     timestamp: new Date(),
+  //   }
+
+  //   setChats((prevChats) =>
+  //     prevChats.map((chat) => {
+  //       if (chat.id === currentChatId) {
+  //         const updatedMessages = [...chat.messages, userMessage]
+  //         // Update title if it's the first message
+  //         const title =
+  //           chat.messages.length === 0 ? messageText.slice(0, 30) + (messageText.length > 30 ? "..." : "") : chat.title
+  //         return { ...chat, messages: updatedMessages, title }
+  //       }
+  //       return chat
+  //     }),
+  //   )
+
+  //   setIsLoading(true)
+
+  //   try {
+  //     const response = await fetch(`${API_URL}/chat`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({ message: messageContent }),
+  //     })
+
+  //     const data = await response.json()
+
+  //     if (data.success) {
+  //       const aiMessage = {
+  //         id: Date.now() + 1,
+  //         text: data.response,
+  //         sender: "ai",
+  //         timestamp: new Date(),
+  //       }
+
+  //       setChats((prevChats) =>
+  //         prevChats.map((chat) => {
+  //           if (chat.id === currentChatId) {
+  //             return { ...chat, messages: [...chat.messages, aiMessage] }
+  //           }
+  //           return chat
+  //         }),
+  //       )
+  //     } else {
+  //       throw new Error(data.error || "Error al obtener respuesta")
+  //     }
+  //   } catch (error) {
+  //     const errorMessage = {
+  //       id: Date.now() + 1,
+  //       text: `Error: ${error.message}. Verifica que el backend esté corriendo y la API key esté configurada.`,
+  //       sender: "ai",
+  //       timestamp: new Date(),
+  //       isError: true,
+  //     }
+
+  //     setChats((prevChats) =>
+  //       prevChats.map((chat) => {
+  //         if (chat.id === currentChatId) {
+  //           return { ...chat, messages: [...chat.messages, errorMessage] }
+  //         }
+  //         return chat
+  //       }),
+  //     )
+  //   } finally {
+  //     setIsLoading(false)
+  //   }
+  // }
 
   const handleNewChat = () => {
     const newChat = {
