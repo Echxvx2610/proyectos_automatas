@@ -1,7 +1,5 @@
-"use client"
-
-import { useState, useRef } from "react"
-import { Send, Paperclip, X, FileText, ImageIcon } from "lucide-react"
+import { useState, useRef, useEffect, useRef } from "react"
+import { Send, Paperclip, X, FileText, ImageIcon, Mic, MicOff } from "lucide-react"
 import "./ChatInput.css"
 
 function ChatInput({ onSend, disabled }) {
@@ -10,6 +8,59 @@ function ChatInput({ onSend, disabled }) {
   const [isDragging, setIsDragging] = useState(false)
   const [previewImage, setPreviewImage] = useState(null)
   const fileInputRef = useRef(null)
+  const [isListening, setIsListening] = useState(false)
+  const [browserSupported, setBrowserSupported] = useState(true)
+  const recognitionRef = useRef(null)
+
+  // Verificar soporte del navegador
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    
+    if (!SpeechRecognition) {
+      setBrowserSupported(false)
+      console.warn("Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.")
+      return
+    }
+
+    // Inicializar reconocimiento de voz
+    const recognition = new SpeechRecognition()
+    recognition.continuous = false // Se detiene automáticamente
+    recognition.interimResults = true // Mostrar resultados mientras habla
+    recognition.lang = 'es-ES' // Español
+
+    // Evento: Cuando se recibe texto
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map(result => result[0])
+        .map(result => result.transcript)
+        .join('')
+      
+      setInput(transcript)
+    }
+
+    // Evento: Error
+    recognition.onerror = (event) => {
+      console.error('Error de reconocimiento:', event.error)
+      setIsListening(false)
+      
+      if (event.error === 'not-allowed') {
+        alert('Permiso de micrófono denegado. Por favor, permite el acceso al micrófono.')
+      }
+    }
+
+    // Evento: Cuando termina de escuchar
+    recognition.onend = () => {
+      setIsListening(false)
+    }
+
+    recognitionRef.current = recognition
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+    }
+  }, [])
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -92,6 +143,27 @@ function ChatInput({ onSend, disabled }) {
 
   const removeAttachment = (id) => {
     setAttachments((prev) => prev.filter((att) => att.id !== id))
+  }
+
+  const toggleListening = () => {
+    if (!browserSupported) {
+      alert("Tu navegador no soporta reconocimiento de voz. Usa Google Chrome o Microsoft Edge.")
+      return
+    }
+
+    if (isListening) {
+      // Detener grabación
+      recognitionRef.current?.stop()
+      setIsListening(false)
+    } else {
+      // Iniciar grabación
+      try {
+        recognitionRef.current?.start()
+        setIsListening(true)
+      } catch (error) {
+        console.error('Error al iniciar reconocimiento:', error)
+      }
+    }
   }
 
   return (
