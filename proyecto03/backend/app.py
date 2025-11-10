@@ -41,6 +41,74 @@ def list_models():
             'error_type': type(e).__name__
         }), 500
 
+# @app.route('/api/chat', methods=['POST'])
+# def chat():
+#     try:
+#         if not os.getenv('GEMINI_API_KEY'):
+#             return jsonify({
+#                 'error': 'API key no configurada. Verifica tu archivo .env',
+#                 'success': False
+#             }), 500
+        
+#         data = request.json
+#         message = data.get('message', '')
+        
+#         if not message:
+#             return jsonify({'error': 'No message provided'}), 400
+        
+#         print(f"Recibiendo mensaje: {message[:50]}...")
+        
+#         # Listar modelos disponibles y seleccionar el primero con generateContent
+#         models = list(genai.list_models())
+#         selected_model = None
+        
+#         # Buscar modelos en orden de preferencia
+#         preferred_names = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
+        
+#         for pref in preferred_names:
+#             for m in models:
+#                 if pref in m.name.lower() and 'generateContent' in getattr(m, 'supported_generation_methods', []):
+#                     selected_model = m.name
+#                     break
+#             if selected_model:
+#                 break
+        
+#         # Si no encuentra ninguno preferido, usa el primero disponible
+#         if not selected_model:
+#             for m in models:
+#                 if 'generateContent' in getattr(m, 'supported_generation_methods', []):
+#                     selected_model = m.name
+#                     break
+        
+#         if not selected_model:
+#             return jsonify({
+#                 'error': 'No se encontró ningún modelo disponible que soporte generateContent',
+#                 'success': False
+#             }), 500
+        
+#         print(f"Usando modelo: {selected_model}")
+        
+#         # Crear modelo y generar respuesta
+#         model = genai.GenerativeModel(selected_model)
+#         response = model.generate_content(message)
+        
+#         print(f"Respuesta generada exitosamente")
+        
+#         return jsonify({
+#             'response': response.text,
+#             'model_used': selected_model,
+#             'success': True
+#         })
+    
+#     except Exception as e:
+#         print(f"Error en /api/chat: {str(e)}")
+#         import traceback
+#         traceback.print_exc()
+#         return jsonify({
+#             'error': str(e),
+#             'success': False
+#         }), 500
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
     try:
@@ -50,13 +118,21 @@ def chat():
                 'success': False
             }), 500
         
-        data = request.json
-        message = data.get('message', '')
+        # Manejar tanto JSON como form-data
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            message = request.form.get('message', '')
+            images = request.files.getlist('images')  # Múltiples imágenes
+        else:
+            data = request.json
+            message = data.get('message', '')
+            images = []
         
-        if not message:
-            return jsonify({'error': 'No message provided'}), 400
+        if not message and not images:
+            return jsonify({'error': 'No message or images provided'}), 400
         
-        print(f"Recibiendo mensaje: {message[:50]}...")
+        print(f"Recibiendo mensaje: {message[:50] if message else '(solo imágenes)'}...")
+        if images:
+            print(f"Con {len(images)} imagen(es)")
         
         # Listar modelos disponibles y seleccionar el primero con generateContent
         models = list(genai.list_models())
@@ -88,9 +164,28 @@ def chat():
         
         print(f"Usando modelo: {selected_model}")
         
-        # Crear modelo y generar respuesta
+        # Crear modelo
         model = genai.GenerativeModel(selected_model)
-        response = model.generate_content(message)
+        
+        # Preparar contenido
+        content = []
+        
+        # Agregar imágenes primero si existen
+        for image_file in images:
+            image_bytes = image_file.read()
+            image = Image.open(io.BytesIO(image_bytes))
+            content.append(image)
+        
+        # Agregar mensaje de texto
+        if message:
+            content.append(message)
+        
+        # Si solo hay texto sin imágenes, enviar directamente como string
+        if not images and message:
+            content = message
+        
+        # Generar respuesta
+        response = model.generate_content(content)
         
         print(f"Respuesta generada exitosamente")
         
@@ -108,6 +203,7 @@ def chat():
             'error': str(e),
             'success': False
         }), 500
+
 
 @app.route('/api/health', methods=['GET'])
 def health():
@@ -131,33 +227,3 @@ if __name__ == '__main__':
         print(f"Error listando modelos: {e}")
     print("===========================\n")
     app.run(debug=True, port=5000)
-@app.route('/api/vision', methods=['POST'])
-def vision():
-     try:
-         if 'image' not in request.files:
-             return jsonify({'error': 'No se envió ninguna imagen'}), 400
-
-         image_file = request.files['image']
-        
-         # Leer imagen en memoria
-         image_bytes = image_file.read()
-         image = Image.open(io.BytesIO(image_bytes))
-
-         # Pregunta opcional
-         question = request.form.get('question', 'Describe la imagen detalladamente.')
-
-         # Seleccionar modelo con visión
-         model_name = "gemini-1.5-flash"  # Puedes cambiar por uno de mayor capacidad
-         model = genai.GenerativeModel(model_name)
-
-         response = model.generate_content([question, image])
-
-         return jsonify({
-             'success': True,
-             'response': response.text,
-             'model_used': model_name
-         })
-
-     except Exception as e:
-         print(f"Error en /api/vision: {e}")
-         return jsonify({'success': False, 'error': str(e)}), 500
