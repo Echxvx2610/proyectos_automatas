@@ -8,6 +8,7 @@ function ChatInput({ onSend, disabled }) {
   const [input, setInput] = useState("")
   const [attachments, setAttachments] = useState([])
   const [isDragging, setIsDragging] = useState(false)
+  const [previewImage, setPreviewImage] = useState(null)
   const fileInputRef = useRef(null)
 
   const handleSubmit = (e) => {
@@ -94,82 +95,118 @@ function ChatInput({ onSend, disabled }) {
   }
 
   return (
-    <div className="chat-input-container">
-      {attachments.length > 0 && (
-        <div className="attachments-preview">
-          {attachments.map((att) => (
-            <div key={att.id} className="attachment-item">
-              {att.type === "image" ? (
-                <>
-                  <img src={att.data || "/placeholder.svg"} alt={att.name} className="attachment-thumbnail" />
-                  <ImageIcon size={16} />
-                </>
-              ) : (
+  <div className="chat-input-container">
+    {/* Vista previa de archivos adjuntos */}
+    {attachments.length > 0 && (
+      <div className="attachments-preview">
+        {attachments.map((att) => (
+          <div key={att.id} className="attachment-item">
+            {att.type === "image" ? (
+              <>
+                <img
+                  src={att.data || "/placeholder.svg"}
+                  alt={att.name}
+                  className="attachment-thumbnail"
+                  onClick={() => setPreviewImage(att.data)} // abrir vista previa
+                />
+                <ImageIcon size={16} />
+              </>
+            ) : (
+              <>
                 <FileText size={16} />
-              )}
-              <span className="attachment-name">{att.name}</span>
-              <button type="button" onClick={() => removeAttachment(att.id)} className="remove-attachment">
-                <X size={14} />
-              </button>
-            </div>
-          ))}
+                <button
+                  type="button"
+                  className="preview-text-btn"
+                  onClick={() =>
+                    alert(att.data.slice(0, 500) + (att.data.length > 500 ? "..." : ""))
+                  }
+                >
+                  Ver contenido
+                </button>
+              </>
+            )}
+            <span className="attachment-name">{att.name}</span>
+            <button
+              type="button"
+              onClick={() => removeAttachment(att.id)}
+              className="remove-attachment"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {/* Formulario del input de chat */}
+    <form
+      onSubmit={handleSubmit}
+      className={`chat-input-form ${isDragging ? "dragging" : ""}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div className="drag-overlay">
+          <Paperclip size={32} />
+          <p>Suelta los archivos aquí</p>
         </div>
       )}
 
-      <form
-        onSubmit={handleSubmit}
-        className={`chat-input-form ${isDragging ? "dragging" : ""}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/*,text/*,.txt"
+        onChange={handleFileSelect}
+        style={{ display: "none" }}
+      />
+
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        className="attach-button"
+        disabled={disabled}
       >
-        {isDragging && (
-          <div className="drag-overlay">
-            <Paperclip size={32} />
-            <p>Suelta los archivos aquí</p>
-          </div>
-        )}
+        <Paperclip size={20} />
+      </button>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept="image/*,text/*,.txt"
-          onChange={handleFileSelect}
-          style={{ display: "none" }}
-        />
+      <textarea
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Escribe tu pregunta aquí..."
+        disabled={disabled}
+        rows={1}
+        className="chat-input"
+      />
 
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="attach-button"
-          disabled={disabled}
-        >
-          <Paperclip size={20} />
-        </button>
+      <button
+        type="submit"
+        disabled={disabled || (!input.trim() && attachments.length === 0)}
+        className="send-button"
+      >
+        <Send size={20} />
+      </button>
+    </form>
 
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Escribe tu pregunta aquí..."
-          disabled={disabled}
-          rows={1}
-          className="chat-input"
-        />
-        <button
-          type="submit"
-          disabled={disabled || (!input.trim() && attachments.length === 0)}
-          className="send-button"
-        >
-          <Send size={20} />
-        </button>
-      </form>
-      <div className="input-hint">
-        Presiona Enter para enviar, Shift + Enter para nueva línea • Arrastra archivos para adjuntar
-      </div>
+    <div className="input-hint">
+      Presiona Enter para enviar, Shift + Enter para nueva línea • Arrastra archivos para adjuntar
     </div>
-  )
+
+    {/* Modal de vista previa de imagen */}
+    {previewImage && (
+      <div className="image-preview-modal" onClick={() => setPreviewImage(null)}>
+        <img
+          src={previewImage}
+          alt="Vista previa"
+          className="image-preview-large"
+        />
+      </div>
+    )}
+  </div>
+)
+
 }
 
 export default ChatInput
