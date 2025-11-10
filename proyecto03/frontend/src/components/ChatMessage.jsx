@@ -4,6 +4,13 @@ import "./ChatMessage.css"
 function ChatMessage({ message }) {
   const isUser = message.sender === "user"
 
+  const formattedTime = message.timestamp
+    ? new Date(message.timestamp).toLocaleTimeString("es-ES", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : ""
+
   return (
     <div className={`message ${isUser ? "message-user" : "message-ai"} ${message.isError ? "message-error" : ""}`}>
       <div className="message-avatar">{isUser ? <User size={20} /> : <Bot size={20} />}</div>
@@ -22,12 +29,7 @@ function ChatMessage({ message }) {
           </div>
         )}
         <div className="message-text">{message.text}</div>
-        <div className="message-time">
-          {message.timestamp.toLocaleTimeString("es-ES", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </div>
+        <div className="message-time">{formattedTime}</div>
       </div>
     </div>
   )
