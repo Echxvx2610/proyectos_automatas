@@ -1,18 +1,20 @@
-import { useState, useRef, useEffect, useRef } from "react"
-import { Send, Paperclip, X, FileText, ImageIcon, Mic, MicOff } from "lucide-react"
+"use client"
+import { useState, useRef, useEffect } from "react"
+import { Send, Paperclip, X, FileText, Image, Mic, MicOff } from "lucide-react"
 import "./ChatInput.css"
 
 function ChatInput({ onSend, disabled }) {
   const [input, setInput] = useState("")
   const [attachments, setAttachments] = useState([])
   const [isDragging, setIsDragging] = useState(false)
-  const [previewImage, setPreviewImage] = useState(null)
-  const fileInputRef = useRef(null)
   const [isListening, setIsListening] = useState(false)
   const [browserSupported, setBrowserSupported] = useState(true)
+  const [previewImage, setPreviewImage] = useState(null)
+  const [previewText, setPreviewText] = useState(null)
+  const fileInputRef = useRef(null)
   const recognitionRef = useRef(null)
 
-  // Verificar soporte del navegador
+  // Verificar soporte del navegador para reconocimiento de voz
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     
@@ -24,9 +26,9 @@ function ChatInput({ onSend, disabled }) {
 
     // Inicializar reconocimiento de voz
     const recognition = new SpeechRecognition()
-    recognition.continuous = false // Se detiene automáticamente
-    recognition.interimResults = true // Mostrar resultados mientras habla
-    recognition.lang = 'es-ES' // Español
+    recognition.continuous = false
+    recognition.interimResults = true
+    recognition.lang = 'es-ES'
 
     // Evento: Cuando se recibe texto
     recognition.onresult = (event) => {
@@ -75,6 +77,25 @@ function ChatInput({ onSend, disabled }) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
       handleSubmit(e)
+    }
+  }
+
+  const toggleListening = () => {
+    if (!browserSupported) {
+      alert("Tu navegador no soporta reconocimiento de voz. Usa Google Chrome o Microsoft Edge.")
+      return
+    }
+
+    if (isListening) {
+      recognitionRef.current?.stop()
+      setIsListening(false)
+    } else {
+      try {
+        recognitionRef.current?.start()
+        setIsListening(true)
+      } catch (error) {
+        console.error('Error al iniciar reconocimiento:', error)
+      }
     }
   }
 
@@ -145,140 +166,156 @@ function ChatInput({ onSend, disabled }) {
     setAttachments((prev) => prev.filter((att) => att.id !== id))
   }
 
-  const toggleListening = () => {
-    if (!browserSupported) {
-      alert("Tu navegador no soporta reconocimiento de voz. Usa Google Chrome o Microsoft Edge.")
-      return
-    }
+  const handleImageClick = (imageData) => {
+    setPreviewImage(imageData)
+  }
 
-    if (isListening) {
-      // Detener grabación
-      recognitionRef.current?.stop()
-      setIsListening(false)
-    } else {
-      // Iniciar grabación
-      try {
-        recognitionRef.current?.start()
-        setIsListening(true)
-      } catch (error) {
-        console.error('Error al iniciar reconocimiento:', error)
-      }
-    }
+  const handleTextPreview = (textData, fileName) => {
+    setPreviewText({ data: textData, name: fileName })
   }
 
   return (
-  <div className="chat-input-container">
-    {/* Vista previa de archivos adjuntos */}
-    {attachments.length > 0 && (
-      <div className="attachments-preview">
-        {attachments.map((att) => (
-          <div key={att.id} className="attachment-item">
-            {att.type === "image" ? (
-              <>
-                <img
-                  src={att.data || "/placeholder.svg"}
-                  alt={att.name}
-                  className="attachment-thumbnail"
-                  onClick={() => setPreviewImage(att.data)} // abrir vista previa
-                />
-                <ImageIcon size={16} />
-              </>
-            ) : (
-              <>
-                <FileText size={16} />
-                <button
-                  type="button"
-                  className="preview-text-btn"
-                  onClick={() =>
-                    alert(att.data.slice(0, 500) + (att.data.length > 500 ? "..." : ""))
-                  }
-                >
-                  Ver contenido
-                </button>
-              </>
-            )}
-            <span className="attachment-name">{att.name}</span>
-            <button
-              type="button"
-              onClick={() => removeAttachment(att.id)}
-              className="remove-attachment"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        ))}
-      </div>
-    )}
-
-    {/* Formulario del input de chat */}
-    <form
-      onSubmit={handleSubmit}
-      className={`chat-input-form ${isDragging ? "dragging" : ""}`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
-      {isDragging && (
-        <div className="drag-overlay">
-          <Paperclip size={32} />
-          <p>Suelta los archivos aquí</p>
+    <div className="chat-input-container">
+      {/* Modal de vista previa de imagen */}
+      {previewImage && (
+        <div className="image-preview-modal" onClick={() => setPreviewImage(null)}>
+          <img src={previewImage} alt="Preview" className="image-preview-large" />
         </div>
       )}
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        accept="image/*,text/*,.txt"
-        onChange={handleFileSelect}
-        style={{ display: "none" }}
-      />
+      {/* Modal de vista previa de texto */}
+      {previewText && (
+        <div className="image-preview-modal" onClick={() => setPreviewText(null)}>
+          <div 
+            style={{
+              background: 'var(--bg-secondary)',
+              padding: '2rem',
+              borderRadius: '12px',
+              maxWidth: '600px',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              color: 'var(--text-primary)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>{previewText.name}</h3>
+            <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'inherit' }}>
+              {previewText.data}
+            </pre>
+          </div>
+        </div>
+      )}
 
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
-        className="attach-button"
-        disabled={disabled}
+      {attachments.length > 0 && (
+        <div className="attachments-preview">
+          {attachments.map((att) => (
+            <div key={att.id} className="attachment-item">
+              {att.type === "image" ? (
+                <>
+                  <img 
+                    src={att.data || "/placeholder.svg"} 
+                    alt={att.name} 
+                    className="attachment-thumbnail"
+                    onClick={() => handleImageClick(att.data)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <Image size={16} />
+                </>
+              ) : (
+                <>
+                  <FileText size={16} />
+                  <button
+                    type="button"
+                    onClick={() => handleTextPreview(att.data, att.name)}
+                    className="preview-text-btn"
+                  >
+                    ver
+                  </button>
+                </>
+              )}
+              <span className="attachment-name">{att.name}</span>
+              <button type="button" onClick={() => removeAttachment(att.id)} className="remove-attachment">
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <form
+        onSubmit={handleSubmit}
+        className={`chat-input-form ${isDragging ? "dragging" : ""}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       >
-        <Paperclip size={20} />
-      </button>
+        {isDragging && (
+          <div className="drag-overlay">
+            <Paperclip size={32} />
+            <p>Suelta los archivos aquí</p>
+          </div>
+        )}
 
-      <textarea
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Escribe tu pregunta aquí..."
-        disabled={disabled}
-        rows={1}
-        className="chat-input"
-      />
-
-      <button
-        type="submit"
-        disabled={disabled || (!input.trim() && attachments.length === 0)}
-        className="send-button"
-      >
-        <Send size={20} />
-      </button>
-    </form>
-
-    <div className="input-hint">
-      Presiona Enter para enviar, Shift + Enter para nueva línea • Arrastra archivos para adjuntar
-    </div>
-
-    {/* Modal de vista previa de imagen */}
-    {previewImage && (
-      <div className="image-preview-modal" onClick={() => setPreviewImage(null)}>
-        <img
-          src={previewImage}
-          alt="Vista previa"
-          className="image-preview-large"
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*,text/*,.txt"
+          onChange={handleFileSelect}
+          style={{ display: "none" }}
         />
-      </div>
-    )}
-  </div>
-)
 
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="attach-button"
+          disabled={disabled}
+          title="Adjuntar archivo"
+        >
+          <Paperclip size={20} />
+        </button>
+
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={isListening ? "Escuchando..." : "Escribe tu pregunta aquí..."}
+          disabled={disabled || isListening}
+          rows={1}
+          className="chat-input"
+        />
+
+        <button
+          type="button"
+          onClick={toggleListening}
+          disabled={disabled}
+          className={`voice-button ${isListening ? 'listening' : ''}`}
+          title={isListening ? "Detener grabación" : "Hablar"}
+        >
+          {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+        </button>
+
+        <button
+          type="submit"
+          disabled={disabled || (!input.trim() && attachments.length === 0)}
+          className="send-button"
+          title="Enviar mensaje"
+        >
+          <Send size={20} />
+        </button>
+      </form>
+      
+      <div className="input-hint">
+        {isListening ? (
+          <span className="recording-hint">
+            🔴 Grabando... Habla ahora
+          </span>
+        ) : (
+          <>Presiona Enter para enviar, Shift + Enter para nueva línea • Arrastra archivos para adjuntar</>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export default ChatInput

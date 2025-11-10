@@ -183,7 +183,6 @@
   }
 }
 
-/* Botón de enviar */
 .send-button {
   display: flex;
   align-items: center;
@@ -216,6 +215,7 @@
   text-align: center;
 }
 
+/* Indicador de grabación */
 .recording-hint {
   color: #ef4444;
   font-weight: 500;
@@ -239,7 +239,15 @@
   .attachment-name {
     max-width: 100px;
   }
+
+  .voice-button,
+  .send-button,
+  .attach-button {
+    width: 36px;
+    height: 36px;
+  }
 }
+
 .image-preview-modal {
   position: fixed;
   inset: 0;
