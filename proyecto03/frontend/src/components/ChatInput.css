@@ -4,7 +4,7 @@
   border-top: 1px solid var(--border-color);
 }
 
-/* Added attachments preview styles */
+/* estilos para los archivos adjuntos previos */
 .attachments-preview {
   display: flex;
   flex-wrap: wrap;
@@ -73,7 +73,7 @@
   border-color: var(--accent-primary);
 }
 
-/* Added dragging state styles */
+/* estilos del estilo/efecto drag and drop */
 .chat-input-form.dragging {
   border-color: var(--accent-primary);
   border-style: dashed;
@@ -95,7 +95,7 @@
   pointer-events: none;
 }
 
-/* Added attach button styles */
+/* estilos de boton de archivos adjuntos */
 .attach-button {
   display: flex;
   align-items: center;

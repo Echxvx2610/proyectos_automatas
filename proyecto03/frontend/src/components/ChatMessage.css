@@ -57,7 +57,7 @@
   flex: 1;
 }
 
-/* Added attachment display styles */
+/* estilos de archivos adjuntos */
 .message-attachments {
   display: flex;
   flex-wrap: wrap;
@@ -105,7 +105,7 @@
     max-height: 150px;
   }
 }
-
+/* estilos para mostrar mensajes con markdown */
 .markdown-body h1,
 .markdown-body h2,
 .markdown-body h3 {

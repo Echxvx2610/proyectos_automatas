@@ -4,7 +4,7 @@
   box-sizing: border-box;
 }
 
-/* Added CSS variables for theming */
+/* variables CSS para tema */
 :root {
   --bg-primary: #0a0a0a;
   --bg-secondary: #1a1a1a;
@@ -33,5 +33,5 @@ body {
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-family: monospace,source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }

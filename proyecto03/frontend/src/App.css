@@ -7,7 +7,7 @@
   margin: 0;
 }
 
-/* Added layout for sidebar and main content */
+/* agregar sidebar al chat */
 .app-content {
   display: flex;
   flex: 1;

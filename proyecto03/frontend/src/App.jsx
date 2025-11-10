@@ -27,7 +27,7 @@ function App() {
         setCurrentChatId(parsedChats[0].id)
       }
     } else {
-      // Create initial chat
+      // Crea el chat inicial si no hay chats guardados
       const initialChat = {
         id: Date.now(),
         title: "Nuevo Chat",
@@ -77,7 +77,7 @@ function App() {
       prevChats.map((chat) => {
         if (chat.id === currentChatId) {
           const updatedMessages = [...chat.messages, userMessage]
-          // Update title if it's the first message
+          // actualizar el título si es el primer mensaje
           const title =
             chat.messages.length === 0 ? messageText.slice(0, 30) + (messageText.length > 30 ? "..." : "") : chat.title
           return { ...chat, messages: updatedMessages, title }
@@ -112,7 +112,6 @@ function App() {
         response = await fetch(`${API_URL}/chat`, {
           method: "POST",
           body: formData,
-          // NO incluir Content-Type header, el navegador lo establece automáticamente con el boundary
         })
       } else {
         // Enviar JSON para solo texto
@@ -179,101 +178,6 @@ function App() {
       setIsLoading(false)
     }
   }
-
-  // const sendMessage = async (messageText, attachments = []) => {
-  //   if (!messageText.trim() && attachments.length === 0) return
-
-  //   let messageContent = messageText
-
-  //   // Add attachment info to message
-  //   if (attachments.length > 0) {
-  //     const attachmentInfo = attachments
-  //       .map((att) => {
-  //         if (att.type === "image") {
-  //           return `[Imagen: ${att.name}]`
-  //         } else {
-  //           return `[Archivo de texto: ${att.name}]\nContenido:\n${att.data}`
-  //         }
-  //       })
-  //       .join("\n\n")
-
-  //     messageContent = `${messageText}\n\n${attachmentInfo}`
-  //   }
-
-  //   const userMessage = {
-  //     id: Date.now(),
-  //     text: messageText,
-  //     attachments: attachments,
-  //     sender: "user",
-  //     timestamp: new Date(),
-  //   }
-
-  //   setChats((prevChats) =>
-  //     prevChats.map((chat) => {
-  //       if (chat.id === currentChatId) {
-  //         const updatedMessages = [...chat.messages, userMessage]
-  //         // Update title if it's the first message
-  //         const title =
-  //           chat.messages.length === 0 ? messageText.slice(0, 30) + (messageText.length > 30 ? "..." : "") : chat.title
-  //         return { ...chat, messages: updatedMessages, title }
-  //       }
-  //       return chat
-  //     }),
-  //   )
-
-  //   setIsLoading(true)
-
-  //   try {
-  //     const response = await fetch(`${API_URL}/chat`, {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({ message: messageContent }),
-  //     })
-
-  //     const data = await response.json()
-
-  //     if (data.success) {
-  //       const aiMessage = {
-  //         id: Date.now() + 1,
-  //         text: data.response,
-  //         sender: "ai",
-  //         timestamp: new Date(),
-  //       }
-
-  //       setChats((prevChats) =>
-  //         prevChats.map((chat) => {
-  //           if (chat.id === currentChatId) {
-  //             return { ...chat, messages: [...chat.messages, aiMessage] }
-  //           }
-  //           return chat
-  //         }),
-  //       )
-  //     } else {
-  //       throw new Error(data.error || "Error al obtener respuesta")
-  //     }
-  //   } catch (error) {
-  //     const errorMessage = {
-  //       id: Date.now() + 1,
-  //       text: `Error: ${error.message}. Verifica que el backend esté corriendo y la API key esté configurada.`,
-  //       sender: "ai",
-  //       timestamp: new Date(),
-  //       isError: true,
-  //     }
-
-  //     setChats((prevChats) =>
-  //       prevChats.map((chat) => {
-  //         if (chat.id === currentChatId) {
-  //           return { ...chat, messages: [...chat.messages, errorMessage] }
-  //         }
-  //         return chat
-  //       }),
-  //     )
-  //   } finally {
-  //     setIsLoading(false)
-  //   }
-  // }
 
   const handleNewChat = () => {
     const newChat = {
