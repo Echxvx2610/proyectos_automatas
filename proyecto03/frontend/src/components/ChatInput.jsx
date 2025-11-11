@@ -1,17 +1,19 @@
 "use client"
 import { useState, useRef, useEffect } from "react"
-import { Send, Paperclip, X, FileText, Image, Mic, MicOff } from "lucide-react"
+import { Send, Paperclip, X, FileText, Image, Mic, MicOff, FileUp } from "lucide-react"
 import "./ChatInput.css"
 
 function ChatInput({ onSend, disabled }) {
   const [input, setInput] = useState("")
   const [attachments, setAttachments] = useState([])
+  const [pdfFile, setPdfFile] = useState(null)
   const [isDragging, setIsDragging] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [browserSupported, setBrowserSupported] = useState(true)
   const [previewImage, setPreviewImage] = useState(null)
   const [previewText, setPreviewText] = useState(null)
   const fileInputRef = useRef(null)
+  const pdfInputRef = useRef(null)
   const recognitionRef = useRef(null)
 
   // Verificar soporte del navegador para reconocimiento de voz
@@ -66,10 +68,11 @@ function ChatInput({ onSend, disabled }) {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if ((input.trim() || attachments.length > 0) && !disabled) {
-      onSend(input, attachments)
+    if ((input.trim() || attachments.length > 0 || pdfFile) && !disabled) {
+      onSend(input, attachments, pdfFile)
       setInput("")
       setAttachments([])
+      setPdfFile(null)
     }
   }
 
@@ -126,10 +129,17 @@ function ChatInput({ onSend, disabled }) {
     const validFiles = files.filter((file) => {
       const isImage = file.type.startsWith("image/")
       const isText = file.type.startsWith("text/") || file.name.endsWith(".txt")
-      return isImage || isText
+      const isPdf = file.type === "application/pdf" || file.name.endsWith(".pdf")
+      return isImage || isText || isPdf
     })
 
     validFiles.forEach((file) => {
+      // Manejar PDFs
+      if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
+        setPdfFile(file)
+        return
+      }
+
       const reader = new FileReader()
 
       if (file.type.startsWith("image/")) {
@@ -174,6 +184,20 @@ function ChatInput({ onSend, disabled }) {
     setPreviewText({ data: textData, name: fileName })
   }
 
+  const handlePdfSelect = (e) => {
+    const file = e.target.files[0]
+    if (file && (file.type === "application/pdf" || file.name.endsWith(".pdf"))) {
+      setPdfFile(file)
+    }
+  }
+
+  const removePdf = () => {
+    setPdfFile(null)
+    if (pdfInputRef.current) {
+      pdfInputRef.current.value = ""
+    }
+  }
+
   return (
     <div className="chat-input-container">
       {/* Modal de vista previa de imagen */}
@@ -202,6 +226,19 @@ function ChatInput({ onSend, disabled }) {
             <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'inherit' }}>
               {previewText.data}
             </pre>
+          </div>
+        </div>
+      )}
+
+      {/* Indicador de PDF cargado */}
+      {pdfFile && (
+        <div className="pdf-indicator">
+          <div className="pdf-info">
+            <FileText size={20} className="pdf-icon" />
+            <span className="pdf-name">{pdfFile.name}</span>
+            <button type="button" onClick={removePdf} className="remove-pdf" title="Quitar PDF">
+              <X size={16} />
+            </button>
           </div>
         </div>
       )}
@@ -265,6 +302,24 @@ function ChatInput({ onSend, disabled }) {
           style={{ display: "none" }}
         />
 
+        <input
+          ref={pdfInputRef}
+          type="file"
+          accept="application/pdf,.pdf"
+          onChange={handlePdfSelect}
+          style={{ display: "none" }}
+        />
+
+        <button
+          type="button"
+          onClick={() => pdfInputRef.current?.click()}
+          className="pdf-button"
+          disabled={disabled || pdfFile !== null}
+          title={pdfFile ? "Ya hay un PDF adjunto" : "Adjuntar PDF"}
+        >
+          <FileUp size={20} />
+        </button>
+
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
@@ -297,7 +352,7 @@ function ChatInput({ onSend, disabled }) {
 
         <button
           type="submit"
-          disabled={disabled || (!input.trim() && attachments.length === 0)}
+          disabled={disabled || (!input.trim() && attachments.length === 0 && !pdfFile)}
           className="send-button"
           title="Enviar mensaje"
         >
@@ -311,7 +366,7 @@ function ChatInput({ onSend, disabled }) {
             🔴 Grabando... Habla ahora
           </span>
         ) : (
-          <>Presiona Enter para enviar, Shift + Enter para nueva línea • Arrastra archivos para adjuntar</>
+          <>Presiona Enter para enviar, Shift + Enter para nueva línea • Arrastra archivos para adjuntar • 📄 para PDFs</>
         )}
       </div>
     </div>

@@ -5,6 +5,7 @@ import ChatMessage from "./components/ChatMessage"
 import ChatInput from "./components/ChatInput"
 import Header from "./components/Header"
 import Sidebar from "./components/Sidebar"
+import { useTheme } from "./hooks/useTheme"
 import "./App.css"
 
 const API_URL = "http://localhost:5000/api"
@@ -14,7 +15,10 @@ function App() {
   const [currentChatId, setCurrentChatId] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [isStreaming, setIsStreaming] = useState(false)
   const messagesEndRef = useRef(null)
+  const abortControllerRef = useRef(null)
+  const { theme, toggleTheme } = useTheme()
 
   useEffect(() => {
     setIsMobile(window.innerWidth <= 768)
@@ -62,13 +66,14 @@ function App() {
   const currentChat = chats.find((chat) => chat.id === currentChatId)
   const messages = currentChat?.messages || []
 
-  const sendMessage = async (messageText, attachments = []) => {
-    if (!messageText.trim() && attachments.length === 0) return
+  const sendMessage = async (messageText, attachments = [], pdfFile = null) => {
+    if (!messageText.trim() && attachments.length === 0 && !pdfFile) return
 
     const userMessage = {
       id: Date.now(),
       text: messageText,
       attachments: attachments,
+      pdfFile: pdfFile ? { name: pdfFile.name } : null,
       sender: "user",
       timestamp: new Date(),
     }
@@ -87,19 +92,44 @@ function App() {
     )
 
     setIsLoading(true)
+    setIsStreaming(true)
+
+    // Crear AbortController para cancelar la solicitud
+    abortControllerRef.current = new AbortController()
+
+    // Crear mensaje de AI vacío que se irá llenando
+    const aiMessageId = Date.now() + 1
+    const aiMessage = {
+      id: aiMessageId,
+      text: "",
+      sender: "ai",
+      timestamp: new Date(),
+      isStreaming: true,
+    }
+
+    setChats((prevChats) =>
+      prevChats.map((chat) => {
+        if (chat.id === currentChatId) {
+          return { ...chat, messages: [...chat.messages, aiMessage] }
+        }
+        return chat
+      }),
+    )
 
     try {
-      // Detectar si hay imágenes
+      // Detectar si hay imágenes o PDFs
       const hasImages = attachments.some(att => att.type === "image")
+      const hasPdf = pdfFile !== null
       
-      let response;
+      let url = `${API_URL}/chat`
+      let fetchOptions = { method: "POST" }
       
-      if (hasImages) {
-        // Enviar con FormData para imágenes
+      if (hasImages || hasPdf) {
+        // Enviar con FormData para imágenes y/o PDFs
         const formData = new FormData()
         formData.append('message', messageText)
         
-        // Convertir base64 a Blob y agregar al FormData
+        // Agregar imágenes
         for (const att of attachments) {
           if (att.type === "image") {
             // Convertir data URL a Blob
@@ -109,10 +139,12 @@ function App() {
           }
         }
         
-        response = await fetch(`${API_URL}/chat`, {
-          method: "POST",
-          body: formData,
-        })
+        // Agregar PDF si existe
+        if (hasPdf) {
+          formData.append('pdf', pdfFile, pdfFile.name)
+        }
+        
+        fetchOptions.body = formData
       } else {
         // Enviar JSON para solo texto
         let messageContent = messageText
@@ -127,55 +159,140 @@ function App() {
           messageContent = `${messageText}\n\n${textAttachments}`
         }
         
-        response = await fetch(`${API_URL}/chat`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ message: messageContent }),
-        })
+        fetchOptions.headers = { "Content-Type": "application/json" }
+        fetchOptions.body = JSON.stringify({ message: messageContent })
       }
 
-      const data = await response.json()
+      // Agregar signal para abortar
+      fetchOptions.signal = abortControllerRef.current.signal
 
-      if (data.success) {
-        const aiMessage = {
-          id: Date.now() + 1,
-          text: data.response,
-          sender: "ai",
-          timestamp: new Date(),
+      const response = await fetch(url, fetchOptions)
+      
+      // Procesar streaming
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ""
+      let fullText = ""
+
+      while (true) {
+        const { done, value } = await reader.read()
+        
+        if (done) break
+        
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        
+        // Guardar la última línea incompleta
+        buffer = lines.pop() || ""
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              
+              if (data.error) {
+                throw new Error(data.error)
+              }
+              
+              if (data.chunk) {
+                fullText += data.chunk
+                
+                // Actualizar el mensaje de AI progresivamente
+                setChats((prevChats) =>
+                  prevChats.map((chat) => {
+                    if (chat.id === currentChatId) {
+                      return {
+                        ...chat,
+                        messages: chat.messages.map((msg) =>
+                          msg.id === aiMessageId
+                            ? { ...msg, text: fullText, isStreaming: true }
+                            : msg
+                        ),
+                      }
+                    }
+                    return chat
+                  }),
+                )
+              }
+              
+              if (data.done) {
+                // Finalizar streaming
+                setChats((prevChats) =>
+                  prevChats.map((chat) => {
+                    if (chat.id === currentChatId) {
+                      return {
+                        ...chat,
+                        messages: chat.messages.map((msg) =>
+                          msg.id === aiMessageId
+                            ? { ...msg, isStreaming: false }
+                            : msg
+                        ),
+                      }
+                    }
+                    return chat
+                  }),
+                )
+              }
+            } catch (parseError) {
+              console.error('Error parsing SSE data:', parseError)
+            }
+          }
         }
-
+      }
+    } catch (error) {
+      // Si fue cancelado por el usuario, no mostrar error
+      if (error.name === 'AbortError') {
+        console.log('Solicitud cancelada por el usuario')
+        
+        // Actualizar el mensaje con indicador de cancelación
         setChats((prevChats) =>
           prevChats.map((chat) => {
             if (chat.id === currentChatId) {
-              return { ...chat, messages: [...chat.messages, aiMessage] }
+              return {
+                ...chat,
+                messages: chat.messages.map((msg) =>
+                  msg.id === aiMessageId
+                    ? { 
+                        ...msg, 
+                        text: msg.text || "Respuesta cancelada.", 
+                        isStreaming: false,
+                        isCancelled: true 
+                      }
+                    : msg
+                ),
+              }
             }
             return chat
           }),
         )
       } else {
-        throw new Error(data.error || "Error al obtener respuesta")
-      }
-    } catch (error) {
-      const errorMessage = {
-        id: Date.now() + 1,
-        text: `Error: ${error.message}. Verifica que el backend esté corriendo y la API key esté configurada.`,
-        sender: "ai",
-        timestamp: new Date(),
-        isError: true,
-      }
+        const errorMessage = {
+          id: Date.now() + 1,
+          text: `Error: ${error.message}. Verifica que el backend esté corriendo y la API key esté configurada.`,
+          sender: "ai",
+          timestamp: new Date(),
+          isError: true,
+        }
 
-      setChats((prevChats) =>
-        prevChats.map((chat) => {
-          if (chat.id === currentChatId) {
-            return { ...chat, messages: [...chat.messages, errorMessage] }
-          }
-          return chat
-        }),
-      )
+        setChats((prevChats) =>
+          prevChats.map((chat) => {
+            if (chat.id === currentChatId) {
+              return { ...chat, messages: [...chat.messages, errorMessage] }
+            }
+            return chat
+          }),
+        )
+      }
     } finally {
       setIsLoading(false)
+      setIsStreaming(false)
+      abortControllerRef.current = null
+    }
+  }
+
+  const handleCancelResponse = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
     }
   }
 
@@ -216,7 +333,7 @@ function App() {
 
   return (
     <div className="app">
-      <Header />
+      <Header theme={theme} onToggleTheme={toggleTheme} />
 
       <div className="app-content">
         <Sidebar
@@ -250,7 +367,14 @@ function App() {
                 {messages.map((message) => (
                   <ChatMessage key={message.id} message={message} />
                 ))}
-                {isLoading && (
+                {isStreaming && (
+                  <div className="cancel-button-container">
+                    <button onClick={handleCancelResponse} className="cancel-response-btn">
+                      ✕ Cancelar respuesta
+                    </button>
+                  </div>
+                )}
+                {isLoading && !isStreaming && (
                   <div className="loading-indicator">
                     <div className="typing-dots">
                       <span></span>

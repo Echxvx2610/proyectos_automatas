@@ -1,10 +1,13 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 import google.generativeai as genai
 import os
 from dotenv import load_dotenv
 from PIL import Image
 import io
+from PyPDF2 import PdfReader
+import json
+import time
 load_dotenv()
 
 app = Flask(__name__)
@@ -122,17 +125,36 @@ def chat():
         if request.content_type and 'multipart/form-data' in request.content_type:
             message = request.form.get('message', '')
             images = request.files.getlist('images')  # Múltiples imágenes
+            pdf_file = request.files.get('pdf')  # Un solo PDF
         else:
             data = request.json
             message = data.get('message', '')
             images = []
+            pdf_file = None
         
-        if not message and not images:
-            return jsonify({'error': 'No message or images provided'}), 400
+        # Validación: Si hay PDF sin mensaje
+        if pdf_file and not message:
+            return jsonify({
+                'error': 'Por favor, incluye una pregunta sobre el PDF que subiste.',
+                'success': False
+            }), 400
         
-        print(f"Recibiendo mensaje: {message[:50] if message else '(solo imágenes)'}...")
+        # Validación: Si hay mensaje que parece requerir PDF pero no hay PDF
+        pdf_keywords = ['pdf', 'documento', 'archivo', 'documento adjunto']
+        if message and any(keyword in message.lower() for keyword in pdf_keywords) and not pdf_file:
+            return jsonify({
+                'error': 'Por favor, adjunta el PDF para poder responder tu pregunta.',
+                'success': False
+            }), 400
+        
+        if not message and not images and not pdf_file:
+            return jsonify({'error': 'No message, images, or PDF provided'}), 400
+        
+        print(f"Recibiendo mensaje: {message[:50] if message else '(solo archivos)'}...")
         if images:
             print(f"Con {len(images)} imagen(es)")
+        if pdf_file:
+            print(f"Con PDF: {pdf_file.filename}")
         
         # Listar modelos disponibles y seleccionar el primero con generateContent
         models = list(genai.list_models())
@@ -170,7 +192,31 @@ def chat():
         # Preparar contenido
         content = []
         
-        # Agregar imágenes primero si existen
+        # Procesar PDF si existe
+        if pdf_file:
+            try:
+                pdf_bytes = pdf_file.read()
+                pdf_reader = PdfReader(io.BytesIO(pdf_bytes))
+                
+                # Extraer texto de todas las páginas
+                pdf_text = ""
+                for page_num, page in enumerate(pdf_reader.pages, 1):
+                    page_text = page.extract_text()
+                    pdf_text += f"\n--- Página {page_num} ---\n{page_text}"
+                
+                # Crear prompt con el texto del PDF
+                pdf_context = f"A continuación se encuentra el contenido completo del PDF '{pdf_file.filename}':\n\n{pdf_text}\n\n"
+                content.append(pdf_context)
+                print(f"PDF procesado: {len(pdf_reader.pages)} páginas, {len(pdf_text)} caracteres")
+                
+            except Exception as pdf_error:
+                print(f"Error procesando PDF: {str(pdf_error)}")
+                return jsonify({
+                    'error': f'Error al procesar el PDF: {str(pdf_error)}',
+                    'success': False
+                }), 400
+        
+        # Agregar imágenes si existen
         for image_file in images:
             image_bytes = image_file.read()
             image = Image.open(io.BytesIO(image_bytes))
@@ -180,20 +226,50 @@ def chat():
         if message:
             content.append(message)
         
-        # Si solo hay texto sin imágenes, enviar directamente como string
-        if not images and message:
+        # Si solo hay texto sin archivos, enviar directamente como string
+        if not images and not pdf_file and message:
             content = message
         
-        # Generar respuesta
-        response = model.generate_content(content)
+        # Generar respuesta con streaming
+        def generate():
+            try:
+                response = model.generate_content(content, stream=True)
+                
+                for chunk in response:
+                    if chunk.text:
+                        # Enviar cada chunk como JSON
+                        data = json.dumps({
+                            'chunk': chunk.text,
+                            'done': False
+                        })
+                        yield f"data: {data}\n\n"
+                        time.sleep(0.01)  # Pequeña pausa para efecto de escritura
+                
+                # Enviar señal de finalización
+                final_data = json.dumps({
+                    'chunk': '',
+                    'done': True,
+                    'model_used': selected_model
+                })
+                yield f"data: {final_data}\n\n"
+                
+            except Exception as e:
+                error_data = json.dumps({
+                    'error': str(e),
+                    'done': True
+                })
+                yield f"data: {error_data}\n\n"
         
-        print(f"Respuesta generada exitosamente")
+        print(f"Iniciando streaming de respuesta")
         
-        return jsonify({
-            'response': response.text,
-            'model_used': selected_model,
-            'success': True
-        })
+        return Response(
+            stream_with_context(generate()),
+            mimetype='text/event-stream',
+            headers={
+                'Cache-Control': 'no-cache',
+                'X-Accel-Buffering': 'no'
+            }
+        )
     
     except Exception as e:
         print(f"Error en /api/chat: {str(e)}")

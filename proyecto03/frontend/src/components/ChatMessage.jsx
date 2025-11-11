@@ -1,4 +1,4 @@
-import { User, Bot } from "lucide-react"
+import { User, Bot, FileText } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import "./ChatMessage.css"
@@ -17,6 +17,14 @@ function ChatMessage({ message }) {
     <div className={`message ${isUser ? "message-user" : "message-ai"} ${message.isError ? "message-error" : ""}`}>
       <div className="message-avatar">{isUser ? <User size={20} /> : <Bot size={20} />}</div>
       <div className="message-content">
+        {/* Mostrar PDF adjunto si existe */}
+        {message.pdfFile && (
+          <div className="message-pdf-attachment">
+            <FileText size={18} className="pdf-attachment-icon" />
+            <span className="pdf-attachment-name">{message.pdfFile.name}</span>
+          </div>
+        )}
+
         {message.attachments && message.attachments.length > 0 && (
           <div className="message-attachments">
             {message.attachments.map((att) => (
@@ -36,6 +44,7 @@ function ChatMessage({ message }) {
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {message.text}
           </ReactMarkdown>
+          {message.isStreaming && <span className="typing-cursor">▋</span>}
         </div>
 
         <div className="message-time">{formattedTime}</div>

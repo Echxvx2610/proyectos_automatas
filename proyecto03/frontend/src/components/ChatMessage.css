@@ -24,6 +24,13 @@
   margin-left: auto;
 }
 
+.message-user .message-content,
+.message-user .message-text,
+.message-user .pdf-attachment-name,
+.message-user .message-time {
+  color: #ffffff;
+}
+
 .message-ai {
   align-self: flex-start;
   background: var(--message-ai);
@@ -48,6 +55,7 @@
 
 .message-user .message-avatar {
   background: var(--accent-primary);
+  color: #ffffff;
 }
 
 .message-content {
@@ -82,6 +90,30 @@
   background: var(--bg-tertiary);
   border-radius: 8px;
   font-size: 0.875rem;
+}
+
+/* Estilos para PDF adjunto en mensaje */
+.message-pdf-attachment {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  width: fit-content;
+}
+
+.pdf-attachment-icon {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.pdf-attachment-name {
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 .message-text {
@@ -128,4 +160,22 @@
   padding: 2px 5px;
   border-radius: 4px;
   font-family: monospace;
+}
+
+/* Cursor de escritura animado */
+.typing-cursor {
+  display: inline-block;
+  margin-left: 2px;
+  animation: blink-cursor 1s infinite;
+  color: var(--accent-primary);
+  font-weight: bold;
+}
+
+@keyframes blink-cursor {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
 }
